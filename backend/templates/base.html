@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Recovering Early Hollywood{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-container" style="background-color: #8B0000; color: white; padding: 10px;">
+            <a href="/" class="logo-link" style="text-decoration: none; color: white; font-size: 20px;">
+                Recovering Early Hollywood
+            </a>
+            <nav style="float: right;">
+                <a href="/history" style="text-decoration: none; color: white; font-size: 18px;">View History</a>
+            </nav>
+        </div>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

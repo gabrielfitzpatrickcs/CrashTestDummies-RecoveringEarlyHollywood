@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>View Thousands of Copyright Documents from Early Hollywood</h1>
+<div class="search-container">
+    <form action="/search" method="get" class="search-form">
+        <input type="text" placeholder="Search by title, content, or actor..." name="query" class="search-bar">
+        
+        <!-- Dropdown for Year -->
+        <select name="year" class="dropdown">
+            <option value="none" disabled selected>Filter by Year</option>
+            <option value="none">None</option>
+            {% for year in years %}
+                <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+        </select>
+        
+        <!-- Dropdown for Document Type -->
+        <select name="doc_type" class="dropdown">
+            <option value="none" disabled selected>Filter by Document Type</option>
+            <option value="none">None</option>
+            <option value="script">Script</option>
+            <option value="production_notes">Production Notes</option>
+            <option value="copyright_registration">Copyright Registration</option>
+            <option value="renewal">Renewal</option>
+            <option value="film_metadata">Film Metadata</option>
+            <option value="transcript">Transcript</option>
+        </select>
+        
+        <button type="submit" class="search-button">Search</button>
+    </form>
+</div>
+{% endblock %}

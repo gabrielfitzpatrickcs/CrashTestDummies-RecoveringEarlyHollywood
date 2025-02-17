@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ document.title }}</h1>
+<p><strong>Actors:</strong> {{ ", ".join(document.actors) }}</p>
+<p><strong>Year:</strong> {{ document.year }}</p>
+<p><strong>Type:</strong> {{ document.type.replace('_', ' ').capitalize() }}</p>
+
+<hr>
+
+<h2>Document Content</h2>
+<pre style="white-space: pre-wrap; font-family: monospace;">{{ content }}</pre>
+
+<hr>
+
+<a href="{{ url_for('home') }}">Back to Home</a>
+<a href="{{ url_for('history') }}">View History</a>
+{% endblock %}

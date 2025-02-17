@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>View History</h1>
+{% if documents %}
+    <ul>
+        {% for document in documents %}
+            <li>
+                {{ document.title }} - 
+                <a href="{{ url_for('view_document', doc_id=document.id) }}">View Again</a>
+                <a href="{{ url_for('remove_from_history', doc_id=document.id) }}" style="color: red;">Remove from History</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <form action="{{ url_for('clear_history') }}" method="get" style="margin-top: 20px;">
+        <button type="submit" style="background-color: red; color: white; padding: 10px; border: none; cursor: pointer;">
+            Clear History
+        </button>
+    </form>
+{% else %}
+    <p>You haven't viewed any documents yet.</p>
+{% endif %}
+<a href="/">Back to Home</a>
+{% endblock %}
