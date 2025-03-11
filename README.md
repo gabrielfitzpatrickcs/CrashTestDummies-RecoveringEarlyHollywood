@@ -17,6 +17,7 @@ This project leverages OCR (Optical Character Recognition) technology to extract
 
 ### Primary Technologies
 - Electron.js (For UI/Desktop App)
+- Axios (HTTP Requests)
 - Node.js (For backend processing)
 - Python (For OCR and data processing)
 - Tesseract OCR (For extracting text from scanned documents)
@@ -27,6 +28,7 @@ Before running the project, ensure you have the following installed:
 - [Node.js](https://nodejs.org/) (LTS version recommended)
 - [Git](https://git-scm.com/)
 - Electron (Run `npm install electron` inside the project folder)
+- Axios (Run `npm install axios` inside the project folder)
 ## Installation & Setup
 Follow these steps to set up the project:
 
@@ -76,3 +78,7 @@ For any inquiries, reach out to:
 - Jimmy Ocaya
 - Michael Wilkinson
 - Samuel Backer (Client Lead)
+
+
+## Notes
+- Images used for OCR must be placed within `./backend/static/img` folder of the project directory for OCR display

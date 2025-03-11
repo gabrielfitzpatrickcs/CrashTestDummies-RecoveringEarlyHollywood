@@ -1,13 +1,33 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import os
 from flask_cors import CORS
+import pytesseract
+from PIL import Image
+from werkzeug.utils import secure_filename
+from flask import send_from_directory
+from datetime import datetime
+from flask import send_file
+import json
+
 
 app = Flask(__name__, template_folder='templates')
 
 CORS(app)  # Enable Cross-Origin Resource Sharing if needed
 app.secret_key = 'your_secret_key'  # Replace with a secure secret key
 
-# In-memory "database" of documents
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# Configure upload folder and allowed extensions
+UPLOAD_FOLDER = 'temp_uploads'
+EDITS_FOLDER = 'temp_edits'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['EDITS_FOLDER'] = EDITS_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# In-memory "database" of documents (template)
 documents = [
     {
         "id": 0,  # Unique identifier
@@ -151,6 +171,57 @@ def view_document(doc_id):
     # Pass the content to the template
     return render_template('document.html', document=doc, content=file_content)
 
+@app.route('/upload', methods=['GET'])
+def upload_page():
+    return render_template('upload.html')
+
+@app.route('/process_image', methods=['POST'])
+def process_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Empty filename'}), 400
+
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+
+        try:
+            text = pytesseract.image_to_string(Image.open(filepath))
+            os.remove(filepath)  # Clean up the temporary file
+
+            output_file = os.path.join(app.config['UPLOAD_FOLDER'], filename + ".txt")
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(text)
+                
+            return render_template('OCRresults.html', ocr_text=text, image_filename=filename)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    return jsonify({'error': 'Invalid file type'}), 400
+
+@app.route('/save_ocr_content', methods=['POST'])
+def save_ocr_content():
+    data = request.get_json()
+    image_filename = data['image_filename']
+    updated_ocr_text = data['ocr_text']
+
+    try:
+        # Define the path where OCR results will be saved
+        ocr_file_path = os.path.join(app.config['EDITS_FOLDER'], image_filename + '.txt')
+
+        # Save the updated OCR text to a file
+        with open(ocr_file_path, 'w', encoding='utf-8') as file:
+            file.write(updated_ocr_text)
+
+        return jsonify({"message": "OCR content saved successfully!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == '__main__':
     # Ensure the Flask app runs on the specified port
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.run(debug=True, port=5000)

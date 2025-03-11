@@ -1,6 +1,8 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 const { spawn } = require("child_process");
+const axios = require("axios");
+const fs = require("fs");
 
 let mainWindow;
 let pythonProcess;
@@ -48,6 +50,21 @@ function startPythonBackend() {
   pythonProcess.on("close", (code) => {
     console.log(`Python process exited with code ${code}`);
   });
+}
+
+// Handle file upload and OCR processing
+async function handleFileUpload(filePath) {
+  const formData = new FormData();
+  formData.append("file", fs.createReadStream(filePath));
+
+  try {
+    const response = await axios.post("http://127.0.0.1:5000/process_image", formData, {
+      headers: formData.getHeaders(),
+    });
+    console.log("OCR Text:", response.data.text);
+  } catch (error) {
+    console.error("Error uploading file:", error);
+  }
 }
 
 // Electron app lifecycle hooks
