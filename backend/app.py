@@ -8,6 +8,9 @@ from flask import send_from_directory
 from datetime import datetime
 from flask import send_file
 import json
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
+import base64
 
 
 app = Flask(__name__, template_folder='templates')
@@ -16,6 +19,18 @@ CORS(app)  # Enable Cross-Origin Resource Sharing if needed
 app.secret_key = 'your_secret_key'  # Replace with a secure secret key
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# Initialize Firebase Admin SDK
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'recoveringearlyhollywood.appspot.com'
+})
+
+# Initialize Firestore
+db = firestore.client()
+
+# Initialize Firebase Storage
+bucket = storage.bucket()
+
 
 # Configure upload folder and allowed extensions
 UPLOAD_FOLDER = 'temp_uploads'
@@ -26,73 +41,6 @@ app.config['EDITS_FOLDER'] = EDITS_FOLDER
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-# In-memory "database" of documents (template)
-documents = [
-    {
-        "id": 0,  # Unique identifier
-        "title": "Zoolander Script",
-        "actors": ["Ben Stiller", "Owen Wilson"],
-        "year": 2001,
-        "type": "script",
-        "content": "The Zoolander script content goes here.",
-        "file_path": "static/zoolander_script.txt"
-    },
-    {
-        "id": 1,
-        "title": "Zoolander 2 Script",
-        "actors": ["Ben Stiller", "Owen Wilson", "Will Ferrell"],
-        "year": 2016,
-        "type": "script",
-        "content": "The Zoolander 2 script content goes here.",
-        "file_path": "static/zoolander2_script.txt"
-    },
-    {
-        "id": 2,
-        "title": "Ice Age Production Notes",
-        "actors": ["Ray Romano", "John Leguizamo", "Denis Leary"],
-        "year": 2002,
-        "type": "production_notes",
-        "content": "Ice Age Production notes content goes here.",
-        "file_path": "static/iceage_prodnotes.txt"
-    },
-    {
-        "id": 3,
-        "title": "Citizen Kane Copyright Registration",
-        "actors": ["Orson Welles"],
-        "year": 1941,
-        "type": "copyright_registration",
-        "content": "Citizen Kane copyright registration details.",
-        "file_path": "static/citizen_kane_copyright.txt"
-    },
-    {
-        "id": 4,
-        "title": "The Godfather Renewal",
-        "actors": ["Marlon Brando", "Al Pacino"],
-        "year": 1992,
-        "type": "renewal",
-        "content": "The Godfather copyright renewal details.",
-        "file_path": "static/the_godfather_renewal.txt"
-    },
-    {
-        "id": 5,
-        "title": "Gone with the Wind Film Metadata",
-        "actors": ["Clark Gable", "Vivien Leigh"],
-        "year": 1939,
-        "type": "film_metadata",
-        "content": "Metadata about Gone with the Wind.",
-        "file_path": "static/gone_with_the_wind_metadata.txt"
-    },
-    {
-        "id": 6,
-        "title": "Pulp Fiction Transcript",
-        "actors": ["John Travolta", "Uma Thurman", "Samuel L. Jackson"],
-        "year": 1994,
-        "type": "transcript",
-        "content": "Transcript of Pulp Fiction.",
-        "file_path": "static/pulp_fiction_transcript.txt"
-    }
-]
 
 @app.route('/')
 def home():
@@ -127,25 +75,22 @@ def search():
     query = request.args.get('query', '').strip().lower()
     year = request.args.get('year', 'none')
     doc_type = request.args.get('doc_type', 'none').strip().lower()
-    
-    # Filter documents based on search criteria
+
+    docs_ref = db.collection('documents')
     results = []
-    for doc in documents:
-        # Check query match for title, content, or actors
-        query_match = (
-            query in doc["title"].lower() or
-            query in doc["content"].lower() or
-            any(query in actor.lower() for actor in doc["actors"])
-        )
-        # Check year and document type
-        year_match = year == 'none' or str(doc["year"]) == year
-        type_match = doc_type == 'none' or doc_type == doc["type"].lower()
-        
-        # Add to results if all conditions are met
-        if query_match and year_match and type_match:
-            results.append(doc)
-    
+
+    # Get all documents from Firestore
+    docs = docs_ref.stream()
+
+    for doc in docs:
+        doc_data = doc.to_dict()
+        if (query in doc_data["title"].lower() or query in doc_data["content"].lower() or
+            any(query in actor.lower() for actor in doc_data["actors"])):
+            if (year == 'none' or str(doc_data["year"]) == year) and (doc_type == 'none' or doc_data["type"].lower() == doc_type):
+                results.append(doc_data)
+
     return render_template('results.html', results=results)
+
 
 @app.route('/document/<int:doc_id>')
 def view_document(doc_id):
@@ -175,6 +120,11 @@ def view_document(doc_id):
 def upload_page():
     return render_template('upload.html')
 
+def add_documents(documents):
+        for doc in documents:
+            db.collection('documents').add(doc)
+        add_documents(documents)
+
 @app.route('/process_image', methods=['POST'])
 def process_image():
     if 'file' not in request.files:
@@ -191,17 +141,25 @@ def process_image():
 
         try:
             text = pytesseract.image_to_string(Image.open(filepath))
+            with open(filepath, "rb") as img_file:
+                image_data = img_file.read()
+
             os.remove(filepath)  # Clean up the temporary file
 
-            output_file = os.path.join(app.config['UPLOAD_FOLDER'], filename + ".txt")
-            with open(output_file, "w", encoding="utf-8") as f:
-                f.write(text)
-                
+            # Save OCR results in Firestore
+            doc_ref = db.collection("ocr_results").add({
+                "image_filename": filename,
+                "ocr_text": text,
+                "image_data": image_data,
+                "timestamp": datetime.utcnow()
+            })
+
             return render_template('OCRresults.html', ocr_text=text, image_filename=filename)
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
     return jsonify({'error': 'Invalid file type'}), 400
+
 
 @app.route('/save_ocr_content', methods=['POST'])
 def save_ocr_content():
@@ -225,3 +183,22 @@ if __name__ == '__main__':
     # Ensure the Flask app runs on the specified port
     os.makedirs(UPLOAD_FOLDER, exist_ok=True)
     app.run(debug=True, port=5000)
+
+@app.route('/retrieve_image/<doc_id>', methods=['GET'])
+def retrieve_image(doc_id):
+    try:
+        doc = db.collection("ocr_results").document(doc_id).get()
+        if doc.exists:
+            doc_data = doc.to_dict()
+            image_filename = doc_data.get("image_filename", "retrieved_image.png")
+            image_data = base64.b64decode(doc_data.get("image_data", ""))
+
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+            with open(image_path, "wb") as image_file:
+                image_file.write(image_data)
+
+            return send_file(image_path, mimetype='image/png')
+        else:
+            return jsonify({'error': 'Document not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

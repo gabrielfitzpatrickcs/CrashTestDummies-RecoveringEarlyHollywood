@@ -15,7 +15,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      devTools: true, // Toggle for dev tools for debugging
+      devTools: false, // Toggle for dev tools for debugging
     },
   });
 
