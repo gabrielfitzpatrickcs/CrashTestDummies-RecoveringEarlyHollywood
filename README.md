@@ -178,4 +178,3 @@ $env:FIREBASE_CREDENTIALS="C:\absolute\path\to\firebase_credentials.json"
 ```sh
 export FIREBASE_CREDENTIALS="/absolute/path/to/firebase_credentials.json"
 ```
-
