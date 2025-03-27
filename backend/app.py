@@ -21,9 +21,12 @@ app.secret_key = 'your_secret_key'  # Replace with a secure secret key
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Initialize Firebase Admin SDK
-firebase_admin.initialize_app(cred, {
-    'storageBucket': 'recoveringearlyhollywood.appspot.com'
-})
+firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS")
+if firebase_cred_path:
+    cred = credentials.Certificate(firebase_cred_path)
+    firebase_admin.initialize_app(cred)
+else:
+    raise ValueError("Firebase credentials not found. Set FIREBASE_CREDENTIALS environment variable.")
 
 # Initialize Firestore
 db = firestore.client()

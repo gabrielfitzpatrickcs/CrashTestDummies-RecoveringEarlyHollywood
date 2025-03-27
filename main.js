@@ -3,6 +3,8 @@ const path = require("path");
 const { spawn } = require("child_process");
 const axios = require("axios");
 const fs = require("fs");
+require("dotenv").config();
+
 
 let mainWindow;
 let pythonProcess;
