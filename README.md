@@ -162,4 +162,20 @@ For any inquiries, reach out to:
 
 - Images used for OCR must be placed within `./backend/static/img` folder of the project directory for OCR display. [Needs to be modified to firebase storage]
 - Ensure that `pytesseract.pytesseract.tesseract_cmd` in `app.py` points to the correct installation path of Tesseract on your system.
+- Before running the app ensure you set the environment variable for the Firebase Admin JSON
+
+- Windows (Command Prompt)
+```sh
+set FIREBASE_CREDENTIALS=C:\absolute\path\to\firebase_credentials.json
+```
+
+- Windows (Powershell)
+```sh
+$env:FIREBASE_CREDENTIALS="C:\absolute\path\to\firebase_credentials.json"
+```
+
+- Mac/Linux
+```sh
+export FIREBASE_CREDENTIALS="/absolute/path/to/firebase_credentials.json"
+```
 
