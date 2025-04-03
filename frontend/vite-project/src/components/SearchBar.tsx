@@ -2,14 +2,14 @@ import React, { useState } from "react";
 import { MouseEvent } from "react";
 import { ChangeEvent } from "react";
 
-interface SearchBarProps {
+interface Props {
     items: string[];
     title: string;
     onSelectHistory: (item: string) => void;
 }
 
 
-function SearchBar({ items, title, onSelectHistory }: SearchBarProps) {
+function SearchBar({ items, title, onSelectHistory }: Props) {
     const [input, setInput] = useState("")
     let currentSelected = "";
 
@@ -29,8 +29,16 @@ function SearchBar({ items, title, onSelectHistory }: SearchBarProps) {
     return (
         <>
             <div className="input-wrapper m-5">
-                <label htmlFor="exampleFormControlInput1" className="form-label">{title}</label>
-                <input className="form-control" placeholder="Search the archive" value={input} onChange={(e) => setInput(e.target.value)} />
+                {/* <label htmlFor="exampleFormControlInput1" className="form-label text-center">{title}</label> */}
+                <h3 className="text-center">View Thousands of Copyright Documents from Early Hollywood</h3>
+                <div className="container">
+                    {/* <input className="form-control" placeholder="Search for..." value={input} onChange={(e) => setInput(e.target.value)} />
+                    <button type="button" className="btn btn-danger" aria-expanded="false">Search</button> */}
+                    <form className="d-flex" role="search">
+                        <input className="form-control me-2" type="search" placeholder="Search" aria-label="Search" value={input} onChange={(e) => setInput(e.target.value)} />
+                        <button className="btn btn-danger" type="submit">Search</button>
+                    </form>
+                </div>
                 <div className="history-list">
                     <ul className="list-group">
                         {items.map((item, index) => (
