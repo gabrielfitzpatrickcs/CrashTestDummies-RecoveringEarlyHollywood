@@ -1,5 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
+require("dotenv").config();
 
 // import { getAuth, updateProfile, updateEmail, updatePassword, deleteUser, setPersistence, browserSessionPersistence } from 'firebase/auth';
 import { doc, getDoc, getFirestore, updateDoc, deleteDoc, collection } from 'firebase/firestore';

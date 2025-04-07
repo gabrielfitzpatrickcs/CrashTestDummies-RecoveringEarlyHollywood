@@ -3,7 +3,7 @@ const path = require("path");
 const { spawn } = require("child_process");
 const axios = require("axios");
 const fs = require("fs");
-require("dotenv").config();
+
 
 
 let mainWindow;
@@ -54,7 +54,7 @@ function startPythonBackend() {
   });
 }
 
-// Handle file upload and OCR processing
+// Handle file upload and OCR processing (Deprecated)
 async function handleFileUpload(filePath) {
   const formData = new FormData();
   formData.append("file", fs.createReadStream(filePath));

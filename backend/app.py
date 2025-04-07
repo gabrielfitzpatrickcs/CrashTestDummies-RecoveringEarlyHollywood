@@ -11,20 +11,31 @@ import json
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import base64
+import io
+from dotenv import load_dotenv
 
 
 app = Flask(__name__, template_folder='templates')
+load_dotenv(r"C:\Users\shtgu\Documents\GitHub\CrashTestDummies-RecoveringEarlyHollywood\FirebaseAPI.env")
 
 CORS(app)  # Enable Cross-Origin Resource Sharing if needed
 app.secret_key = 'your_secret_key'  # Replace with a secure secret key
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = os.getenv("TESSERACT_CMD")
+# cred = credentials.Certificate(r"C:\Users\shtgu\Documents\GitHub\CrashTestDummies-RecoveringEarlyHollywood\backend\firebase_cred\recoveringearlyhollywood-firebase-adminsdk-fbsvc-a087c3b7fc.json")
 
-# Initialize Firebase Admin SDK
-firebase_cred_path = os.getenv("FIREBASE_CREDENTIALS")
+# # Initialize Firebase Admin SDK
+# firebase_admin.initialize_app(cred, {
+# #     'storageBucket': 'recoveringearlyhollywood.appspot.com'
+# })
+firebase_cred_path = os.getenv("FIREBASE_CRED_PATH")
+print(firebase_cred_path)
+print("check")
 if firebase_cred_path:
     cred = credentials.Certificate(firebase_cred_path)
-    firebase_admin.initialize_app(cred)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': 'recoveringearlyhollywood.appspot.com'
+    })
 else:
     raise ValueError("Firebase credentials not found. Set FIREBASE_CREDENTIALS environment variable.")
 
@@ -50,7 +61,7 @@ def home():
     earliest_year = 1887
     current_year = 2025  # Updated to the current year
     years = list(range(earliest_year, current_year + 1))
-    return render_template('home.html', years=years, documents=documents)
+    return render_template('home.html', years=years, documents=add_documents)
 
 @app.route('/history')
 def history():
@@ -79,7 +90,7 @@ def search():
     year = request.args.get('year', 'none')
     doc_type = request.args.get('doc_type', 'none').strip().lower()
 
-    docs_ref = db.collection('documents')
+    docs_ref = db.collection('ocr_results')
     results = []
 
     # Get all documents from Firestore
@@ -146,6 +157,13 @@ def process_image():
             text = pytesseract.image_to_string(Image.open(filepath))
             with open(filepath, "rb") as img_file:
                 image_data = img_file.read()
+
+            # Needs to be used to take image data from firestore and display it client side
+            def binary_to_image(binary_data, output_path="output_image.png"):
+                image = Image.open(io.BytesIO(binary_data))
+                image.save(output_path)
+            
+            binary_to_image(image_data, "./temp_uploads/restored_image.png")
 
             os.remove(filepath)  # Clean up the temporary file
 
