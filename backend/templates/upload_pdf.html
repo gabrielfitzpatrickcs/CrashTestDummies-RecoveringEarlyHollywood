@@ -1,0 +1,87 @@
+<!-- templates/upload_pdf.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Upload PDF Document</title>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+  <header>
+    <div class="header-container" style="background-color: #8B0000; color: white; padding: 10px;">
+      <a href="/" class="logo-link" style="text-decoration: none; color: white; font-size: 20px;">Recovering Early Hollywood</a>
+      <nav style="float: right;">
+        <a href="/history" style="text-decoration: none; color: white; font-size: 18px;">View History</a>
+        <a href="/upload_pdf" style="text-decoration: none; color: white; font-size: 18px; margin-left: 20px;">Upload PDF</a>
+      </nav>
+    </div>
+  </header>
+
+  <main style="padding: 20px;">
+    <h1>Upload a Document to Firebase</h1>
+    <form id="uploadForm">
+      <label for="title">Title:</label><br>
+      <input type="text" name="title" required><br><br>
+
+      <label for="actors">Actors (comma-separated):</label><br>
+      <input type="text" name="actors"><br><br>
+
+      <label for="year">Year:</label><br>
+      <input type="number" name="year" min="1887" max="2025" required><br><br>
+
+      <label for="type">Document Type:</label><br>
+      <select name="type" required>
+        <option value="" disabled selected>Filter by Document Type</option>
+        <option value="Script">Script</option>
+        <option value="Production Notes">Production Notes</option>
+        <option value="Copyright Registration">Copyright Registration</option>
+        <option value="Renewal">Renewal</option>
+        <option value="Film Metadata">Film Metadata</option>
+        <option value="Transcript">Transcript</option>
+      </select><br><br>
+
+      <label for="pdf">PDF File:</label><br>
+      <input type="file" name="pdf" accept=".pdf" required><br><br>
+
+      <button type="submit">Upload PDF</button>
+    </form>
+  </main>
+  <script type="module">
+    import { uploadPDF, saveDocumentMetadata } from "../../firebaseUtils.js";
+  
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+  
+      const file = document.querySelector('input[name="pdf"]').files[0];
+      const title = document.querySelector('input[name="title"]').value;
+      const actors = document.querySelector('input[name="actors"]').value.split(",").map(a => a.trim());
+      const year = parseInt(document.querySelector('input[name="year"]').value);
+      const type = document.querySelector('select[name="type"]').value;
+  
+      if (!file || !title || !year || !type) {
+        alert("Please fill all required fields.");
+        return;
+      }
+  
+      try {
+        const path = `documents/${file.name}`;
+        const fileURL = await uploadPDF(file, path);
+        await saveDocumentMetadata({
+          title,
+          actors,
+          year,
+          type,
+          file_url: fileURL
+        });
+        alert("Upload successful!");
+        e.target.reset();
+      } catch (err) {
+        console.error(err);
+        alert("Upload failed.");
+      }
+    });
+  </script>
+  
+</body>
+</html>

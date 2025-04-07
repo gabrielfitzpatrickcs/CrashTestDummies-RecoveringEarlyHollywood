@@ -1,7 +1,7 @@
 {
   "name": "electron",
   "version": "1.0.0",
-  "main": "main.js",
+  "main": "main.cjs",
   "type": "module",
   "scripts": {
     "start": "electron .",
@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "axios": "^1.8.2",
+    "dotenv": "^16.4.7",
     "firebase": "^11.6.0",
     "flask-cors": "^0.0.1"
   }
