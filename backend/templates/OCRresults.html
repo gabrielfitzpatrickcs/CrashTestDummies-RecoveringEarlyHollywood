@@ -35,7 +35,7 @@
             width: 45%;
         }
         .save-button {
-            background-color: #4CAF50;
+            background-color: #d33d18;
             color: white;
             padding: 10px;
             border: none;
@@ -60,6 +60,8 @@
     <main>
         <h1>OCR Processing Results</h1>
 
+        <div id="flash-message" style="display:none; padding: 10px; margin: 20px 0; border: 1px solid transparent;"></div>
+
         {% for filename, text in results %}
         <div class="result-container">
             <div class="image-container">
@@ -73,6 +75,9 @@
             </div>
         </div>
         {% endfor %}
+        <div style="text-align: center; margin-top: 50px;">
+            <button class="save-button" style="background-color: #d33d18;" onclick="uploadToFirebase()">Upload to Database</button>
+        </div>
     </main>
 
     <script>
@@ -99,6 +104,69 @@
                 alert("Failed to save content for " + filename);
             });
         }
+
+        function displayFlashMessage(message, status) {
+            const flash = document.getElementById("flash-message");
+            flash.style.display = "block";
+            flash.textContent = message;
+
+            if (status === "success") {
+                flash.style.backgroundColor = "#d4edda";
+                flash.style.color = "#155724";
+                flash.style.borderColor = "#c3e6cb";
+            } else {
+                flash.style.backgroundColor = "#f8d7da";
+                flash.style.color = "#721c24";
+                flash.style.borderColor = "#f5c6cb";
+            }
+        }
+
+        function uploadToFirebase() {
+            const groupedDocs = {};
+
+            document.querySelectorAll('[id^="ocrText_"]').forEach(div => {
+                const index = div.id.split("_")[1];
+                const text = div.innerText;
+                const filename = document.querySelector(`button[onclick*="'${index}'"]`).getAttribute("onclick").split("'")[1];
+
+                // Get base name before "_page_X"
+                const baseMatch = filename.match(/^(.*)_page_\d+\.jpg$/);
+                const baseKey = baseMatch ? baseMatch[1] : filename;
+
+                if (!groupedDocs[baseKey]) {
+                    groupedDocs[baseKey] = {
+                        image_filenames: [],
+                        ocr_texts: []
+                    };
+                }
+
+                groupedDocs[baseKey].image_filenames.push(filename);
+                groupedDocs[baseKey].ocr_texts.push(text);
+            });
+
+            const documents = Object.entries(groupedDocs).map(([baseKey, value]) => ({
+                base_filename: baseKey,
+                image_filenames: value.image_filenames,
+                combined_text: value.ocr_texts.join("\n\n")
+            }));
+
+            fetch("/upload_to_firebase", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ documents }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayFlashMessage(data.message, data.status);
+            })
+            .catch(error => {
+                console.error("Upload failed:", error);
+                displayFlashMessage("An unexpected error occurred during upload.", "error");
+            });
+        }
+
     </script>
 </body>
 </html>

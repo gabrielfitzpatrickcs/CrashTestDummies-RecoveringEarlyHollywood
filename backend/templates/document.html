@@ -1,5 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+    .editable-text {
+        width: 100%;
+        min-height: 200px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background-color: #f9f9f9;
+        white-space: pre-wrap;
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+    }
+    .result-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+    }
+    .image-container {
+        width: 45%;
+    }
+    .text-container {
+        width: 45%;
+    }
+    .action-button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    .button-group {
+        text-align: center;
+        margin-top: 30px;
+    }
+</style>
+
 <h1>{{ document.title }}</h1>
 <p><strong>Actors:</strong> {{ ", ".join(document.actors) }}</p>
 <p><strong>Year:</strong> {{ document.year }}</p>
@@ -8,10 +44,71 @@
 <hr>
 
 <h2>Document Content</h2>
-<pre style="white-space: pre-wrap; font-family: monospace;">{{ content }}</pre>
 
-<hr>
+<div id="results-container">
+    {% for image in document.images %}
+    <div class="result-container">
+        <div class="image-container">
+            <img src="{{ url_for('static', filename='uploads/' + image.filename) }}" alt="{{ image.filename }}" style="max-width: 500px;">
+        </div>
+        <div class="text-container">
+            <div id="ocrText_{{ loop.index }}" class="editable-text" contenteditable="false">{{ image.text }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 
-<a href="{{ url_for('home') }}">Back to Home</a>
-<a href="{{ url_for('history') }}">View History</a>
+<div class="button-group">
+    <button id="editButton" class="action-button" onclick="enableEditing()">Edit</button>
+</div>
+
+<script>
+    function enableEditing() {
+        document.querySelectorAll('.editable-text').forEach(div => {
+            div.setAttribute('contenteditable', 'true');
+        });
+
+        const buttonGroup = document.querySelector('.button-group');
+        buttonGroup.innerHTML = `
+            <button class="action-button" onclick="saveEdits()">Save Edits</button>
+            <button class="action-button" style="background-color: #228B22;" onclick="uploadToFirebase()">Upload to Database</button>
+        `;
+    }
+
+    function saveEdits() {
+        document.querySelectorAll('.editable-text').forEach(div => {
+            div.setAttribute('contenteditable', 'false');
+        });
+        alert("Edits saved locally. Be sure to click 'Upload to Database' to finalize changes.");
+    }
+
+    function uploadToFirebase() {
+        const results = [];
+
+        document.querySelectorAll('.editable-text').forEach((div, index) => {
+            const filename = "{{ document.images[0].filename }}".replace(/_page_\d+\.jpg$/, `_page_${index + 1}.jpg`);
+            results.push({
+                image_filename: filename,
+                ocr_text: div.innerText
+            });
+        });
+
+        fetch("/upload_to_firebase", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ documents: results }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message || "Upload complete.");
+        })
+        .catch(error => {
+            console.error("Upload failed:", error);
+            alert("An error occurred during upload.");
+        });
+    }
+</script>
+
 {% endblock %}
