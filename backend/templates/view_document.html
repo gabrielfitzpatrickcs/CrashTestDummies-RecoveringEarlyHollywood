@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ document.title }}</h1>
+<p><strong>Year:</strong> {{ document.year }}</p>
+<p><strong>Type:</strong> {{ document.type }}</p>
+<p><strong>Actors:</strong> {{ ", ".join(document.actors) }}</p>
+<p><strong>Content:</strong> {{ document.content }}</p>
+<a href="{{ url_for('home') }}">Back to Home</a>
+{% endblock %}

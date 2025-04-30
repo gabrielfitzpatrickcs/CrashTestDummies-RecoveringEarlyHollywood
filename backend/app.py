@@ -131,6 +131,38 @@ def save_ocr_content():
         return jsonify({"message": "OCR content saved successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+@app.route('/results', methods=['GET', 'POST'])
+def results():
+    query = request.args.get('query', '')
+    year = request.args.get('year', '')
+
+    # TODO: Replace this with real data loading (e.g., from Firestore or JSON)
+    all_documents = [
+        {'id': 1, 'title': 'Sunset Boulevard', 'year': 1950, 'type': 'feature_film', 'actors': ['Gloria Swanson']},
+        {'id': 2, 'title': 'The Kid', 'year': 1921, 'type': 'short_film', 'actors': ['Charlie Chaplin']}
+    ]
+
+    # Filter documents based on query and year
+    results = []
+    for doc in all_documents:
+        if (not query or query.lower() in doc['title'].lower()) and (not year or str(doc['year']) == year):
+            results.append(doc)
+
+    return render_template('results.html', results=results)
+@app.route('/view_document/<int:doc_id>')
+def view_document(doc_id):
+    # Using the same dummy data source as your /results route
+    all_documents = [
+        {'id': 1, 'title': 'Sunset Boulevard', 'year': 1950, 'type': 'feature_film', 'actors': ['Gloria Swanson'], 'content': 'This is an example content.'},
+        {'id': 2, 'title': 'The Kid', 'year': 1921, 'type': 'short_film', 'actors': ['Charlie Chaplin'], 'content': 'Another sample content.'}
+    ]
+
+    document = next((doc for doc in all_documents if doc['id'] == doc_id), None)
+
+    if not document:
+        return "Document not found", 404
+
+    return render_template('view_document.html', document=document)
 
 @app.route('/upload_pdf', methods=['GET', 'POST'])
 def upload_pdf():
