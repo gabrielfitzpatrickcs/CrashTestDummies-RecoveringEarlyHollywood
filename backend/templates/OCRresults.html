@@ -34,13 +34,16 @@
         .text-container {
             width: 45%;
         }
-        .save-button {
+        .save-button, .download-button {
             background-color: #4CAF50;
             color: white;
             padding: 10px;
             border: none;
             cursor: pointer;
             margin-top: 10px;
+        }
+        .download-button {
+            margin: 20px 0;
         }
     </style>
 </head>
@@ -60,6 +63,8 @@
     <main>
         <h1>OCR Processing Results</h1>
 
+        <button class="download-button" onclick="downloadAsPdf()">Download All Pages as PDF</button>
+
         {% for filename, text in results %}
         <div class="result-container">
             <div class="image-container">
@@ -68,7 +73,7 @@
             </div>
             <div class="text-container">
                 <h3>OCR Text</h3>
-                <div id="ocrText_{{ loop.index }}" class="editable-text" contenteditable="true">{{ text }}</div>
+                <div id="ocrText_{{ loop.index }}" class="editable-text" contenteditable="true" data-filename="{{ filename }}">{{ text }}</div>
                 <button class="save-button" onclick="saveEdits('{{ filename }}', '{{ loop.index }}')">Save Edits</button>
             </div>
         </div>
@@ -97,6 +102,36 @@
             .catch(error => {
                 console.error("Error saving OCR content:", error);
                 alert("Failed to save content for " + filename);
+            });
+        }
+
+        function downloadAsPdf() {
+            const pageElements = document.querySelectorAll('[data-filename]');
+            const pages = Array.from(pageElements).map(el => ({
+                image_filename: el.dataset.filename,
+                ocr_text: el.innerText
+            }));
+
+            fetch("/download_pdf", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ pages: pages })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to generate PDF");
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "ocr_output.pdf";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch(err => {
+                alert(err.message);
             });
         }
     </script>

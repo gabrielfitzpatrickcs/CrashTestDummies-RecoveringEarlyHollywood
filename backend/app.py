@@ -7,14 +7,14 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from pdf2image import convert_from_path
 import tempfile
-
+from fpdf import FPDF
 app = Flask(__name__, template_folder='templates')
 
 CORS(app)
 app.secret_key = 'your_secret_key'
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe" # Adjust this path as needed
-poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin" # Adjust this path as needed
+poppler_path = r"C:\Users\bubit\Desktop\poppler-24.08.0\Library\bin" # Adjust this path as needed
 
 UPLOAD_FOLDER = 'backend/static/img'
 EDITS_FOLDER = 'backend/static/edits'
@@ -163,6 +163,32 @@ def view_document(doc_id):
         return "Document not found", 404
 
     return render_template('view_document.html', document=document)
+
+
+
+
+@app.route('/download_pdf', methods=['POST'])
+def download_pdf():
+    data = request.get_json()
+    pages = data.get('pages', [])
+
+    if not pages:
+        return jsonify({"error": "No pages provided"}), 400
+
+    pdf = FPDF()
+    pdf.add_font("DejaVu", "", "backend/static/fonts/DejaVuSans.ttf", uni=True)
+    pdf.set_font("DejaVu", size=12)
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    for page in pages:
+        pdf.add_page()
+        pdf.multi_cell(0, 10, page['ocr_text'])
+
+    output_path = os.path.join(tempfile.gettempdir(), "ocr_output.pdf")
+    pdf.output(output_path)
+
+    return send_file(output_path, as_attachment=True, download_name="ocr_output.pdf")
+
 
 @app.route('/upload_pdf', methods=['GET', 'POST'])
 def upload_pdf():
