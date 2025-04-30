@@ -12,7 +12,7 @@ const testFilePath = path.join(__dirname, 'sample.pdf');
 
 // Check that file exists
 if (!fs.existsSync(testFilePath)) {
-  console.error("❌ sample.pdf not found in project root.");
+  console.error("sample.pdf not found in project root.");
   process.exit(1);
 }
 
@@ -27,8 +27,8 @@ const storagePath = `test_uploads/${file.name}`;
 // Upload it
 uploadPDF(file, storagePath)
   .then((url) => {
-    console.log("✅ Upload successful! File available at:", url);
+    console.log("Upload successful! File available at:", url);
   })
   .catch((err) => {
-    console.error("❌ Upload failed:", err);
+    console.error("Upload failed:", err);
   });
