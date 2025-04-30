@@ -1,4 +1,3 @@
-<!-- upload.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Image</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .flash-message {
+            background-color: #ffdddd;
+            border-left: 6px solid #f44336;
+            color: #a94442;
+            padding: 10px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -22,10 +31,20 @@
 
     <main>
         <h1>Upload Your Image for OCR Processing</h1>
+
+        <!-- Flash message section -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
         <form action="/process_image" method="POST" enctype="multipart/form-data">
-            <label for="file">Choose an image to upload:</label><br>
-            <input type="file" name="file" id="file" accept="image/*" required><br><br>
-            <button type="submit">Upload Image</button>
+            <label for="file">Choose one or more images or PDFs to upload:</label><br>
+            <input type="file" name="file" id="file" multiple accept="image/*,.pdf" required><br><br>
+            <button type="submit">Upload Files</button>
         </form>
     </main>
 </body>

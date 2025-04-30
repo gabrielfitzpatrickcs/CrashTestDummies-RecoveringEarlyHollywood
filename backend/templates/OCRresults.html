@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR Result</title>
+    <title>OCR Results</title>
     <link rel="stylesheet" href="/static/style.css">
     <style>
         .editable-text {
@@ -23,9 +23,10 @@
             background-color: red;
             text-decoration: line-through;
         }
-        .container {
+        .result-container {
             display: flex;
             justify-content: space-between;
+            margin-bottom: 40px;
         }
         .image-container {
             width: 45%;
@@ -57,89 +58,47 @@
     </header>
 
     <main>
-        <h1>OCR Processing Result</h1>
-        <div class="container">
+        <h1>OCR Processing Results</h1>
+
+        {% for filename, text in results %}
+        <div class="result-container">
             <div class="image-container">
-                <h3>Original Image</h3>
-                <img src="{{ url_for('static', filename='img/' + image_filename) }}" alt="Uploaded Image" style="max-width: 500px;">
+                <h3>{{ filename }}</h3>
+                <img src="{{ url_for('static', filename='img/' + filename) }}" alt="{{ filename }}" style="max-width: 500px;">
             </div>
             <div class="text-container">
                 <h3>OCR Text</h3>
-                <!-- Editable content -->
-                <div id="ocrText" class="editable-text" contenteditable="true">{{ ocr_text }}</div>
-                <button id="saveButton" class="save-button">Save Edits</button>
+                <div id="ocrText_{{ loop.index }}" class="editable-text" contenteditable="true">{{ text }}</div>
+                <button class="save-button" onclick="saveEdits('{{ filename }}', '{{ loop.index }}')">Save Edits</button>
             </div>
         </div>
+        {% endfor %}
     </main>
 
     <script>
-        // Track the original content to identify changes
-        let originalContent = "{{ ocr_text }}";
-        let currentContent = originalContent;
+        function saveEdits(filename, index) {
+            const ocrDiv = document.getElementById(`ocrText_${index}`);
+            const updatedText = ocrDiv.innerText;
 
-        function applyChanges() {
-            let diff = compareText(originalContent, currentContent);
-
-            // Apply highlighting for additions and deletions
-            document.getElementById("ocrText").innerHTML = diff;
-        }
-
-        // Simple comparison function to identify additions and deletions
-        function compareText(original, updated) {
-            let added = "";
-            let removed = "";
-            let originalIndex = 0;
-            let updatedIndex = 0;
-
-            while (originalIndex < original.length && updatedIndex < updated.length) {
-                if (original[originalIndex] !== updated[updatedIndex]) {
-                    if (original[originalIndex] !== updated[updatedIndex]) {
-                        removed += "<span class='highlight-removed'>" + original[originalIndex] + "</span>";
-                        originalIndex++;
-                    }
-                    added += "<span class='highlight-added'>" + updated[updatedIndex] + "</span>";
-                    updatedIndex++;
-                } else {
-                    added += updated[updatedIndex];
-                    originalIndex++;
-                    updatedIndex++;
-                }
-            }
-
-            return added + updated.slice(updatedIndex);  // Handle remaining additions
-        }
-
-        // Track the user's input and identify changes
-        document.getElementById("ocrText").addEventListener("input", function() {
-            currentContent = document.getElementById("ocrText").innerText;  // Get updated content
-            applyChanges();  // Highlight additions and deletions
-        });
-
-        // Save edited content when the save button is clicked
-        document.getElementById("saveButton").addEventListener("click", function() {
-            let updatedText = document.getElementById("ocrText").innerText;
-
-            // Send the updated text to the server via AJAX to save
             fetch("/save_ocr_content", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    image_filename: "{{ image_filename }}",
+                    image_filename: filename,
                     ocr_text: updatedText,
                 }),
             })
             .then(response => response.json())
             .then(data => {
-                alert("OCR content saved successfully!");
-                originalContent = updatedText;  // Update the original content
+                alert(`OCR content for "${filename}" saved successfully!`);
             })
             .catch(error => {
                 console.error("Error saving OCR content:", error);
-                alert("Failed to save the content. Please try again.");
+                alert("Failed to save content for " + filename);
             });
-        });
+        }
     </script>
 </body>
 </html>

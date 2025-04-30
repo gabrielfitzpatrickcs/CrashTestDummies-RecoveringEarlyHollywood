@@ -1,21 +1,24 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, send_file, flash
 import os
 from flask_cors import CORS
 import pytesseract
 from PIL import Image
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from pdf2image import convert_from_path
+import tempfile
 
 app = Flask(__name__, template_folder='templates')
 
 CORS(app)
 app.secret_key = 'your_secret_key'
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe" # Adjust this path as needed
+poppler_path = r"C:\Users\shtgu\Documents\CodingPackages\poppler-24.08.0\Library\bin" # Adjust this path as needed
 
-UPLOAD_FOLDER = 'temp_uploads'
-EDITS_FOLDER = 'temp_edits'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+UPLOAD_FOLDER = 'backend/static/img'
+EDITS_FOLDER = 'backend/static/edits'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'pdf'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['EDITS_FOLDER'] = EDITS_FOLDER
 
@@ -53,27 +56,67 @@ def upload_page():
 
 @app.route('/process_image', methods=['POST'])
 def process_image():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
+    uploaded_files = request.files.getlist('file')
 
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'Empty filename'}), 400
+    if not uploaded_files or all(f.filename == '' for f in uploaded_files):
+        flash('No files selected')
+        return redirect(url_for('upload_page'))
 
-    if file and allowed_file(file.filename):
+    all_texts = []
+    image_filenames = []
+
+    for file in uploaded_files:
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+        if filename == '':
+            continue
 
-        try:
-            text = pytesseract.image_to_string(Image.open(filepath))
-            os.remove(filepath)  # Optional: Clean up temp file
+        ext = os.path.splitext(filename)[1].lower()
 
-            return render_template('OCRresults.html', ocr_text=text, image_filename=filename)
-        except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        if ext == '.pdf':
+            tmp_fd, tmp_path = tempfile.mkstemp(suffix=".pdf")
+            os.close(tmp_fd)  # Close the open file descriptor
+            file.save(tmp_path)  # Save uploaded PDF to that path
+            try:
+                images = convert_from_path(tmp_path, poppler_path=poppler_path)  # Only needed if Poppler isn't in PATH
+                if len(images) > 1:
+                    images.pop()
 
-    return jsonify({'error': 'Invalid file type'}), 400
+                for i, image in enumerate(images):
+                    image_filename = f'{os.path.splitext(filename)[0]}_page_{i+1}.jpg'
+                    image_path = os.path.join(app.config['UPLOAD_FOLDER'], image_filename)
+                    image.save(image_path)
+                    text = pytesseract.image_to_string(image)
+                    all_texts.append((image_filename, text))
+                    image_filenames.append(image_filename)
+
+            except Exception as e:
+                flash(f'Failed to process PDF: {str(e)}')
+                return redirect(url_for('upload_page'))
+
+            finally:
+                os.remove(tmp_path)  # Clean up temp PDF file
+
+        elif allowed_file(filename):
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(filepath)
+
+            try:
+                text = pytesseract.image_to_string(Image.open(filepath))
+                all_texts.append((filename, text))
+                image_filenames.append(filename)
+            except Exception as e:
+                flash(f'Failed to process image {filename}: {str(e)}')
+            finally:
+                os.remove(filepath)
+
+        else:
+            flash(f'Unsupported file type: {filename}')
+
+    if not all_texts:
+        flash('No valid files processed.')
+        return redirect(url_for('upload_page'))
+
+    return render_template('OCRresults.html', results=all_texts)
 
 @app.route('/save_ocr_content', methods=['POST'])
 def save_ocr_content():
@@ -88,6 +131,7 @@ def save_ocr_content():
         return jsonify({"message": "OCR content saved successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 @app.route('/upload_pdf', methods=['GET', 'POST'])
 def upload_pdf():
     return render_template("upload_pdf.html")

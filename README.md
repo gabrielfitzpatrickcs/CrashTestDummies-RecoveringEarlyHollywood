@@ -31,7 +31,7 @@ This project leverages OCR (Optical Character Recognition) technology to extract
 
 Before running the project, install the following:
 
-```sh
+```
 npm install electron axios form-data
 ```
 
@@ -43,8 +43,8 @@ npm install electron axios form-data
 
 Ensure you have Python installed along with the following dependencies:
 
-```sh
-pip install flask flask-cors pytesseract pillow firebase-admin werkzeug
+```
+pip install flask flask-cors pytesseract pillow firebase-admin werkzeug pdf2image
 ```
 
 - **Flask** (For backend API development)
@@ -53,8 +53,42 @@ pip install flask flask-cors pytesseract pillow firebase-admin werkzeug
 - **Pillow** (To handle image file processing)
 - **Firebase-Admin** (For Firestore database interactions)
 - **Werkzeug** (For secure file handling)
+- **pdf2image** (To convert PDF pages to images for OCR processing)
 
-Additionally, install [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) on your system and ensure its path is correctly set in `app.py`.
+Additionally, install Tesseract OCR on your system and ensure its path is correctly set in `app.py`.
+
+#### Poppler Requirement (For PDF Support)
+
+The `pdf2image` library requires Poppler to be installed on your system in order to process PDF files.
+
+**Windows:**
+
+1. Download the latest Poppler binary from:
+   https://github.com/oschwartz10612/poppler-windows/releases/
+2. Extract the ZIP file to a directory, for example:
+   ```
+   C:\Program Files\poppler-xx\
+   ```
+3. Add the `bin` folder to your system's `PATH` environment variable:
+   ```
+   C:\Program Files\poppler-xx\bin
+   ```
+4. If needed, specify the path explicitly in your Flask backend:
+   ```python
+   images = convert_from_path(pdf_path, poppler_path=r'C:\Program Files\poppler-xx\bin')
+   ```
+
+**macOS:**
+
+```
+brew install poppler
+```
+
+**Linux (Debian/Ubuntu):**
+
+```
+sudo apt-get install poppler-utils
+```
 
 ## Installation & Setup
 
@@ -62,7 +96,7 @@ Follow these steps to set up the project:
 
 ### 1. Clone the Repository
 
-```sh
+```
 git clone https://github.com/gabrielfitzpatrickcs/CrashTestDummies-RecoveringEarlyHollywood.git
 cd CrashTestDummies-RecoveringEarlyHollywood
 ```
@@ -71,7 +105,7 @@ cd CrashTestDummies-RecoveringEarlyHollywood
 
 Navigate to the backend folder and install the required dependencies:
 
-```sh
+```
 cd backend
 pip install -r requirements.txt
 ```
@@ -80,7 +114,7 @@ Ensure your Firebase credentials JSON file is correctly placed and configured in
 
 ### 3. Start the Python Backend
 
-```sh
+```
 python app.py
 ```
 
@@ -90,14 +124,14 @@ The backend will start running on `http://127.0.0.1:5000`.
 
 Navigate to the Electron folder and install dependencies:
 
-```sh
+```
 cd electron
 npm install
 ```
 
 ### 5. Run the Application
 
-```sh
+```
 npm start
 ```
 
@@ -108,6 +142,7 @@ This will start the Electron application, which connects to the Flask backend.
 ### Flask Backend
 
 - Handles file uploads and OCR processing (`/process_image` route)
+- Supports PDF file conversion to image pages for OCR using Poppler and pdf2image
 - Stores and retrieves OCR results in Firestore (`/retrieve_image/<doc_id>` route)
 - Provides document search functionality based on metadata (`/search` route)
 - Manages user browsing history (`/history`, `/clear_history`, `/remove_from_history/<doc_id>` routes)
@@ -115,7 +150,7 @@ This will start the Electron application, which connects to the Flask backend.
 ### Electron Frontend
 
 - Displays the Flask-powered web interface
-- Allows users to upload images for OCR processing
+- Allows users to upload images and PDFs for OCR processing
 - Handles communication with the backend using Axios
 
 ## Contributing
@@ -125,19 +160,19 @@ If you want to contribute:
 1. Fork the repository
 2. Create a new branch
 
-```sh
+```
 git checkout -b feature-name
 ```
 
 3. Make your changes and commit
 
-```sh
+```
 git commit -m "Added new feature"
 ```
 
 4. Push your branch
 
-```sh
+```
 git push origin feature-name
 ```
 
@@ -165,16 +200,16 @@ For any inquiries, reach out to:
 - Before running the app ensure you set the environment variable for the Firebase Admin JSON
 
 - Windows (Command Prompt)
-```sh
+```
 set FIREBASE_CREDENTIALS=C:\absolute\path\to\firebase_credentials.json
 ```
 
 - Windows (Powershell)
-```sh
+```
 $env:FIREBASE_CREDENTIALS="C:\absolute\path\to\firebase_credentials.json"
 ```
 
 - Mac/Linux
-```sh
+```
 export FIREBASE_CREDENTIALS="/absolute/path/to/firebase_credentials.json"
 ```
