@@ -25,7 +25,6 @@ This project leverages OCR (Optical Character Recognition) technology to extract
 - **Flask** (Python micro-framework to serve the backend API)
 - **Tesseract OCR** (For extracting text from scanned documents)
 - **Firebase Firestore & Storage** (For document storage and retrieval)
-- **PostgreSQL** (For database storage of structured metadata)
 
 ### Node.js Dependencies
 
